@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Analyzer</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+    
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
+        .container { max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px; box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1); }
+        input, textarea, button { width: 100%; margin: 10px 0; padding: 10px; }
+        button { background-color: #28a745; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #218838; }
+        .output { margin-top: 20px; }
+        </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Resume Analyzer</h2>
+
+        <form id="upload-form">
+            <label for="resume">Upload Resume (PDF/DOCX):</label>
+            <input type="file" id="resume" required>
+            
+            <label for="job-description">Job Description:</label>
+            <textarea id="job-description" rows="4" required></textarea>
+
+            <button type="submit">Analyze Resume</button>
+        </form>
+
+        <div class="output">
+            <h3>Match Score: <span id="match-score">-</span>%</h3>
+            <h4>Missing Skills:</h4> <p id="missing-skills">-</p>
+            <h4>Missing Education:</h4> <p id="missing-education">-</p>
+            <h4>Missing Experience:</h4> <p id="missing-experience">-</p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById("upload-form").addEventListener("submit", async function(event) {
+            event.preventDefault();
+            
+            let resumeFile = document.getElementById("resume").files[0];
+            let jobDescription = document.getElementById("job-description").value;
+
+            if (!resumeFile || !jobDescription) {
+                alert("Please upload a resume and enter a job description.");
+                return;
+            }
+
+            let formData = new FormData();
+            formData.append("file", resumeFile);
+
+            // Step 1: Upload the Resume
+            let uploadResponse = await fetch("/upload", {
+                method: "POST",
+                body: formData
+            });
+
+            let uploadData = await uploadResponse.json();
+
+            if (!uploadResponse.ok) {
+                alert(uploadData.error || "Error uploading resume.");
+                return;
+            }
+
+            // Step 2: Compare Resume with Job Description
+            let compareResponse = await fetch("/compare", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    resume_data: uploadData.resume_data,
+                    job_description: jobDescription
+                })
+            });
+
+            let compareData = await compareResponse.json();
+
+            if (!compareResponse.ok) {
+                alert(compareData.error || "Error comparing resume.");
+                return;
+            }
+
+            // Display results
+            document.getElementById("match-score").innerText = compareData.match_score;
+            document.getElementById("missing-skills").innerText = compareData.missing_skills.join(", ") || "None";
+            document.getElementById("missing-education").innerText = compareData.missing_education.join(", ") || "None";
+            document.getElementById("missing-experience").innerText = compareData.missing_experience || "None";
+        });
+    </script>
+
+</body>
+</html>
+
