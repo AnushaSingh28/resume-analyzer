@@ -198,3 +198,4 @@ pdfplumber==0.11.5
 spacy==3.8.4
 gunicorn==20.1.0
 requests==2.31.0
+python-docx
